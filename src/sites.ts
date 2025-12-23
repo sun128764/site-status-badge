@@ -6,7 +6,7 @@
 export const SITES:  Record<string, string> = {
   vcbs:"https://vcb-s.com/",
   dmhy: "https://dmhy.org/",
-  bangumI: "https://bangumi.moe/",
+  bangumi: "https://bangumi.moe/",
   nyaa: "https://nyaa.si/",
   acgrip: "https://acg.rip/",
   acgnx:"https://share.acgnx.se/",
