@@ -40,7 +40,7 @@
 	// "services": [  {   "binding": "MY_SERVICE",   "service": "my-service"  } ]
 	"kv_namespaces": [
 		{
-			"binding": "SITE_STATUS_BADGE_KV",
+			"binding": "SITE_STATUS_KV",
 			"id": "29944dbec637436b8279fb8569fa7099"
 		}
 	]
