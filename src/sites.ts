@@ -4,8 +4,11 @@
  * value: 需要检测的网站 URL
  */
 export const SITES:  Record<string, string> = {
-  dmhy: "http://dmhy.org/",
-  google: "https://www.google.com/",
-  github:  "https://github.com/",
-  // 在这里添加更多网站
+  vcbs:"https://vcb-s.com/",
+  dmhy: "https://dmhy.org/",
+  bangumI: "https://bangumi.moe/",
+  nyaa: "https://nyaa.si/",
+  acgrip: "https://acg.rip/",
+  acgnx:"https://share.acgnx.se/",
+  sacgnx:"https://www.acgnx.se/"
 };
