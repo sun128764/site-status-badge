@@ -14,13 +14,21 @@
 	 * Smart Placement
 	 * https://developers.cloudflare.com/workers/configuration/smart-placement/#smart-placement
 	 */
-	// "placement": {  "mode": "smart" }
+	"placement": {
+		"mode": "smart"
+	},
 	/**
 	 * Bindings
 	 * Bindings allow your Worker to interact with resources on the Cloudflare Developer Platform, including
 	 * databases, object storage, AI inference, real-time communication and more.
 	 * https://developers.cloudflare.com/workers/runtime-apis/bindings/
 	 */
+	"kv_namespaces": [
+		{
+			"binding": "SITE_STATUS_KV",
+			"id": "29944dbec637436b8279fb8569fa7099"
+		}
+	]
 	/**
 	 * Environment Variables
 	 * https://developers.cloudflare.com/workers/wrangler/configuration/#environment-variables
@@ -38,10 +46,4 @@
 	 * https://developers.cloudflare.com/workers/wrangler/configuration/#service-bindings
 	 */
 	// "services": [  {   "binding": "MY_SERVICE",   "service": "my-service"  } ]
-	"kv_namespaces": [
-		{
-			"binding": "SITE_STATUS_KV",
-			"id": "29944dbec637436b8279fb8569fa7099"
-		}
-	]
 }
