@@ -23,8 +23,19 @@ async function checkSiteStatus(url: string): Promise<boolean> {
 		});
 
 		clearTimeout(timeoutId);
-		return response.status === 200;
-	} catch {
+		if (response.status === 200 || response.status === 403) {
+			return true;
+		}
+		else {
+			console.log(`Site check failed for ${url}: ${response.body}`);
+			return false;
+		}
+	} catch (error) {
+		if (error instanceof DOMException && error.name === 'AbortError') {
+			console.log(`Site check timed out for ${url}`);
+		} else {
+			console.log(`Site check error for ${url}: ${error}`);
+		}
 		return false;
 	}
 }
