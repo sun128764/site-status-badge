@@ -27,7 +27,7 @@ async function checkSiteStatus(url: string): Promise<boolean> {
 			return true;
 		}
 		else {
-			console.log(`Site check failed for ${url}: ${response.body}`);
+			console.log(`Site check failed for ${url}: ${response.status} ${response.body}`);
 			return false;
 		}
 	} catch (error) {
