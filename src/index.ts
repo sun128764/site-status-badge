@@ -119,7 +119,7 @@ export default {
 		const path = url.pathname;
 
 		// 解析路径：/badge/{siteKey}
-		const match = path.match(/^\/badge\/([a-zA-Z0-9_-]+)$/);
+		const match = path.match(/^\/badge\/([a-zA-Z0-9_-]+)\/?$/);
 
 		if (!match) {
 			return new Response("Not Found.  Usage: /badge/{site-key}", {
