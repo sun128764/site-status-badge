@@ -52,11 +52,10 @@ async function generateWebPFiles(): Promise<void> {
                     const webpFileName = `${siteKey}-${statusNum}-${suffix}.webp`;
                     const webpFilePath = join(OUTPUT_DIR, webpFileName);
 
-                    // 使用 sharp 将 SVG 转换为 WebP
+                    // 使用 sharp 将 SVG 等比缩放为指定宽度的 WebP
+                    // 仅指定 width，height 由 sharp 按原始 SVG 宽高比自动计算，避免图像被压扁
                     await sharp(Buffer.from(svg))
-                        .resize(width, width / 10.6, {
-                            fit: "fill",
-                        })
+                        .resize({ width })
                         .webp({ quality: 90 })
                         .toFile(webpFilePath);
 
