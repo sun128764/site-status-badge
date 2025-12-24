@@ -9,6 +9,6 @@ export const SITES: Record<string, string> = {
   bangumi: "https://bangumi.moe/rss/latest",
   nyaa: "https://nyaa.si/?page=rss",
   acgrip: "https://acg.rip/.xml",
-  acgnx: "https://share.acgnx.se/rss.xml",
-  sacgnx: "https://www.acgnx.se/rss.xml"
+  acgnxa: "https://share.acgnx.se/rss.xml",
+  acgnxg: "https://www.acgnx.se/rss.xml"
 };
