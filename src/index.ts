@@ -12,7 +12,7 @@ const CDN_CACHE_TTL = 5 * 60; // 5 分钟 CDN 缓存
 async function checkSiteStatus(url: string): Promise<boolean> {
 	try {
 		const controller = new AbortController();
-		const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 秒超时
+		const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 秒超时
 
 		const response = await fetch(url, {
 			method: "HEAD",
@@ -32,7 +32,8 @@ async function checkSiteStatus(url: string): Promise<boolean> {
 async function getStatusWithCache(
 	siteKey: string,
 	siteUrl: string,
-	kv: KVNamespace
+	kv: KVNamespace,
+	ctx?: ExecutionContext
 ): Promise<boolean> {
 	const cacheKey = `status:${siteKey}`;
 	const lockKey = `lock:${siteKey}`;
@@ -40,32 +41,61 @@ async function getStatusWithCache(
 	// 检查缓存
 	const cachedStatus = await kv.get(cacheKey);
 	if (cachedStatus !== null) {
+		// 缓存存在，立即返回缓存值，不阻塞用户请求
+		// 同时在后台异步刷新缓存（通过 ctx.waitUntil）
+		if (ctx) {
+			ctx.waitUntil(refreshStatusInBackground(siteKey, siteUrl, kv));
+		}
 		return cachedStatus === "true";
 	}
 
-	// 检查锁，避免冷启动时多次请求
+	// 缓存不存在，检查是否已有锁（表示正在刷新）
 	const lock = await kv.get(lockKey);
 	if (lock !== null) {
-		// 有锁说明正在请求中，返回上次的缓存值或默认 false
+		// 有锁说明正在请求中，返回上次保存的状态或默认 false
 		const lastStatus = await kv.get(`last:${siteKey}`);
 		return lastStatus === "true";
 	}
 
-	// 设置锁
-	await kv.put(lockKey, "1", { expirationTtl: LOCK_TTL });
+	// 没有缓存，设置锁并在后台刷新
+	if (ctx) {
+		ctx.waitUntil(refreshStatusInBackground(siteKey, siteUrl, kv));
+	} else {
+		// 如果没有 ctx，同步执行（作为回退）
+		await refreshStatusInBackground(siteKey, siteUrl, kv);
+	}
 
-	// 检测网站状态
-	const isOnline = await checkSiteStatus(siteUrl);
+	// 返回上次保存的状态或默认 true（更乐观的假设）
+	const lastStatus = await kv.get(`last:${siteKey}`);
+	return lastStatus === "true";
+}
 
-	// 存储结果到缓存
-	await kv.put(cacheKey, String(isOnline), { expirationTtl: CACHE_TTL });
-	// 同时保存一份持久的最后状态（用于锁期间返回）
-	await kv.put(`last:${siteKey}`, String(isOnline));
+/**
+ * 后台刷新缓存（不阻塞用户请求）
+ */
+async function refreshStatusInBackground(
+	siteKey: string,
+	siteUrl: string,
+	kv: KVNamespace
+): Promise<void> {
+	const lockKey = `lock:${siteKey}`;
+	const cacheKey = `status:${siteKey}`;
 
-	// 删除锁
-	await kv.delete(lockKey);
+	try {
+		// 设置锁，防止多个并发请求
+		await kv.put(lockKey, "1", { expirationTtl: LOCK_TTL });
 
-	return isOnline;
+		// 检测网站状态
+		const isOnline = await checkSiteStatus(siteUrl);
+
+		// 存储结果到缓存
+		await kv.put(cacheKey, String(isOnline), { expirationTtl: CACHE_TTL });
+		// 同时保存一份最后状态（用于锁期间或缓存缺失时返回）
+		await kv.put(`last:${siteKey}`, String(isOnline));
+	} finally {
+		// 删除锁
+		await kv.delete(lockKey);
+	}
 }
 
 export default {
@@ -102,7 +132,7 @@ export default {
 		}
 
 		// 获取状态（带缓存）
-		const isOnline = await getStatusWithCache(siteKey, siteUrl, env.SITE_STATUS_KV);
+		const isOnline = await getStatusWithCache(siteKey, siteUrl, env.SITE_STATUS_KV, ctx);
 
 		// 生成 SVG badge
 		const svg = generateBadge(siteKey, isOnline);
