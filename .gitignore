@@ -165,3 +165,7 @@ dist
 .env*
 !.env.example
 .wrangler/
+
+# Auto-generated WebP files and data
+public/
+src/webp-data.ts

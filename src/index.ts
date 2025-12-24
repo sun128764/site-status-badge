@@ -1,5 +1,6 @@
 import { SITES } from "./sites";
 import { generateBadge } from "./badge";
+import { getWebPData } from "./webp-data";
 
 export interface Env {
 	SITE_STATUS_KV: KVNamespace;
@@ -118,11 +119,54 @@ export default {
 		const url = new URL(request.url);
 		const path = url.pathname;
 
-		// 解析路径：/badge/{siteKey}
+		// 处理 WebP 端点：/badge/{siteKey}.webp
+		const webpMatch = path.match(/^\/badge\/([a-zA-Z0-9_-]+)\.webp\/?$/);
+		if (webpMatch) {
+			const siteKey = webpMatch[1].toLowerCase();
+			const siteUrl = SITES[siteKey];
+
+			if (!siteUrl) {
+				const availableSites = Object.keys(SITES).join(", ");
+				return new Response(
+					`Unknown site: ${siteKey}. Available sites: ${availableSites}`,
+					{
+						status: 404,
+						headers: { "Content-Type": "text/plain" },
+					}
+				);
+			}
+
+			// 获取状态（带缓存）
+			const isOnline = await getStatusWithCache(siteKey, siteUrl, env.SITE_STATUS_KV, ctx);
+
+			// 从预生成的 WebP 数据获取
+			const statusNum = isOnline ? "1" : "0";
+			const webpKey = `webp:${siteKey}-${statusNum}-default`;
+			const webpBuffer = getWebPData(webpKey);
+
+			if (!webpBuffer) {
+				return new Response("WebP file not found. Please run 'pnpm generate-webp' first.", {
+					status: 404,
+					headers: { "Content-Type": "text/plain" },
+				});
+			}
+
+			return new Response(webpBuffer, {
+				status: 200,
+				headers: {
+					"Content-Type": "image/webp",
+					"Cache-Control": `public, max-age=${CDN_CACHE_TTL}`,
+					"CDN-Cache-Control": `max-age=${CDN_CACHE_TTL}`,
+					"Cloudflare-CDN-Cache-Control": `max-age=${CDN_CACHE_TTL}`,
+				},
+			});
+		}
+
+		// 处理 SVG 端点：/badge/{siteKey}
 		const match = path.match(/^\/badge\/([a-zA-Z0-9_-]+)\/?$/);
 
 		if (!match) {
-			return new Response("Not Found.  Usage: /badge/{site-key}", {
+			return new Response("Not Found.  Usage: /badge/{site-key} or /badge/{site-key}.webp", {
 				status: 404,
 				headers: { "Content-Type": "text/plain" },
 			});
