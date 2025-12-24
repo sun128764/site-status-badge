@@ -8,7 +8,7 @@ export interface Env {
 const CACHE_TTL = 30 * 60; // 30 分钟结果缓存
 const LOCK_TTL = 60; // 1 分钟锁
 const CDN_CACHE_TTL = 5 * 60; // 5 分钟 CDN 缓存
-
+const ALLOWED_STATUSES = [200, 401, 403, 429];
 async function checkSiteStatus(url: string): Promise<boolean> {
 	try {
 		const controller = new AbortController();
@@ -23,7 +23,7 @@ async function checkSiteStatus(url: string): Promise<boolean> {
 		});
 
 		clearTimeout(timeoutId);
-		if (response.status === 200 || response.status === 403) {
+		if (ALLOWED_STATUSES.includes(response.status)) {
 			return true;
 		}
 		else {
