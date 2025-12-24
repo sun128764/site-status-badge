@@ -43,28 +43,30 @@ GET /badge/{siteKey}.webp
 
 ### 4. 自动化构建流程
 
+
 #### 包含的任务：
 ```bash
-# 仅生成 WebP 文件
+# 仅生成 WebP 文件（手动运行）
 pnpm generate-webp
 
-# 部署（自动包含 WebP 生成）
+# 部署（自动生成 WebP 后部署）
 pnpm deploy
 
-# 开发模式（自动包含 WebP 生成）
+# 开发模式（需先手动生成 WebP）
 pnpm dev
 
-# 启动（自动包含 WebP 生成）
+# 启动（需先手动生成 WebP）
 pnpm start
 ```
 
 #### 构建流程：
-1. `generate-webp` 任务会自动：
-   - 运行 `src/generate-webp.ts` 生成 WebP 文件到 `/public`
-   - 运行 `src/upload-webp.ts` 编码为 `src/webp-data.ts`
+1. `generate-webp` 任务：
+  - 运行 `src/generate-webp.ts` 生成 WebP 文件到 `/public`
+  - 运行 `src/upload-webp.ts` 编码为 `src/webp-data.ts`
    
-2. 每次 `deploy`, `dev`, `start` 时都会预先运行 `generate-webp`
-
+2. **仅 `deploy` 命令自动运行 `generate-webp`**
+  - 本地开发（`dev`, `start`）需要手动运行 `pnpm generate-webp`
+  - 修改网站配置或样式后需要手动运行
 ### 5. 新增依赖
 - **sharp** (^0.34.5): 高性能图像处理库
 - **tsx** (^4.21.0): TypeScript 脚本执行器
@@ -140,14 +142,37 @@ pnpm dev             # 启动开发服务器
 ### 维护清单：
 - `src/webp-data.ts` 由自动化脚本生成，不要手动编辑
 - `src/generate-webp.ts` 和 `src/upload-webp.ts` 可根据需要自定义
-- WebP 缓存策略与 SVG 相同（5 分钟 CDN 缓存）
+## 开发工作流
 
-## 技术细节
-
+### 首次运行：
+```bash
+pnpm install          # 安装依赖
+pnpm generate-webp    # 生成 WebP 文件（本地开发必需）
+pnpm dev              # 启动开发服务器
+```
 ### WebP 编码参数：
+### 本地开发工作流：
+1. 修改代码
+2. 如果修改了网站配置或样式，运行 `pnpm generate-webp`
+3. 运行 `pnpm dev` 启动开发服务器
+4. 测试 WebP 端点
 - 质量: 90 (高质量，文件较小)
+### 部署工作流：
+1. 修改代码
+2. 运行 `pnpm deploy`（自动生成 WebP 后部署）
+3. 无需手动运行 `generate-webp`
 - 格式: WebP (现代浏览器支持)
+### 添加新网站：
+1. 在 `src/sites.ts` 中添加网站
+2. 运行 `pnpm generate-webp` 生成新网站的 WebP 文件
+3. WebP 文件自动添加到 `src/webp-data.ts`
+4. 无需修改其他代码，端点自动支持
 - 尺寸: 通过 Sharp 的 `resize` 方法精确缩放
+### 维护清单：
+- `src/webp-data.ts` 由自动化脚本生成，不要手动编辑
+- `src/generate-webp.ts` 和 `src/upload-webp.ts` 可根据需要自定义
+- WebP 缓存策略与 SVG 相同（5 分钟 CDN 缓存）
+- 本地开发需要手动运行 `pnpm generate-webp`，部署时自动运行
 
 ### 数据编码：
 - 格式: Base64
