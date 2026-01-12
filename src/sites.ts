@@ -10,5 +10,6 @@ export const SITES: Record<string, string> = {
   nyaa: "https://nyaa.si/?page=rss",
   acgrip: "https://acg.rip/.xml",
   acgnxa: "https://share.acgnx.se/rss.xml",
-  acgnxg: "https://www.acgnx.se/rss.xml"
+  acgnxg: "https://www.acgnx.se/rss.xml",
+	mikan: "https://mikan.tangbai.cc/RSS/Classic"
 };
