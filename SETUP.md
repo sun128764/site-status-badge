@@ -4,22 +4,22 @@
 
 ### 生成 WebP 文件
 ```bash
-pnpm generate-webp
+pnpm run generate-webp
 ```
 这会：
-1. 为所有网站生成 28 个 WebP 文件（2 个状态 × 7 个网站 × 2 个尺寸）
+1. 为所有网站生成 16 个 WebP 文件（2 个状态 × 8 个网站）
 2. 将它们编码到 TypeScript 文件中
 3. 生成清单文件
 
 ### 部署（自动包含 WebP 生成）
 ```bash
-pnpm deploy
+pnpm run deploy
 ```
 
 ### 开发模式（需先手动生成 WebP）
 ```bash
-pnpm generate-webp  # 先生成 WebP
-pnpm dev            # 再启动开发服务器
+pnpm run generate-webp  # 先生成 WebP
+pnpm run dev            # 再启动开发服务器
 ```
 
 ## API 端点
@@ -37,13 +37,14 @@ GET /badge/{siteKey}.webp
 ## 支持的网站
 
 目前支持的 siteKey：
-- `vcbs` - VCB-Studio
-- `dmhy` - Dymy
-- `bangumi` - Bangumi Moe
-- `nyaa` - Nyaa.si
-- `acgrip` - ACG.RIP
-- `acgnxa` - ACG-NX (acgnx.se)
-- `acgnxg` - ACG-NX (acgnx.se)
+- `vcbs` - VCB-Studio (https://vcb-s.com/)
+- `dmhy` - DMHY (https://dmhy.org/)
+- `bangumi` - Bangumi Moe (https://bangumi.moe/)
+- `nyaa` - Nyaa.si (https://nyaa.si/)
+- `acgrip` - ACG.RIP (https://acg.rip/)
+- `acgnxa` - ACGNX.SE (https://share.acgnx.se/)
+- `acgnxg` - ACGNX.SE Global (https://www.acgnx.se/)
+- `mikan` - Mikan (https://mikan.tangbai.cc/)
 
 ## 文件结构
 
@@ -57,10 +58,10 @@ src/
 └── webp-data.ts          # 自动生成（不要编辑）
 
 public/
-├── vcbs-0-default.webp   # 离线状态（原始尺寸）
-├── vcbs-0-2x.webp        # 离线状态（2倍尺寸）
-├── vcbs-1-default.webp   # 在线状态（原始尺寸）
-├── vcbs-1-2x.webp        # 在线状态（2倍尺寸）
+├── vcbs-0.webp          # 离线状态
+├── vcbs-1.webp          # 在线状态
+├── dmhy-0.webp          # 离线状态
+├── dmhy-1.webp          # 在线状态
 └── ... (其他网站)
 ```
 
@@ -87,19 +88,15 @@ public/
 ## 何时重新生成 WebP
 
 需要重新生成的情况：
-## 何时重新生成 WebP
+- ✅ 自动：部署前（`pnpm run deploy` 自动运行）
+- 🔄 手动：开发前（`pnpm run generate-webp`，然后运行 `pnpm run dev`）
+- 🔄 手动：修改网站配置后（`pnpm run generate-webp`）
+- 🔄 手动：修改徽章样式后（`pnpm run generate-webp`）
 
 ## 常见问题
-- ✅ 自动：部署前（`pnpm deploy` 自动运行）
-- 🔄 手动：开发前（`pnpm generate-webp`，然后运行 `pnpm dev`）
-- 🔄 手动：修改网站配置后（`pnpm generate-webp`）
-- 🔄 手动：修改徽章样式后（`pnpm generate-webp`）
 
 ### Q: WebP 文件会占用很多空间吗？
-A: 不会。28 个 WebP 文件总共仅 ~116KB，编码后的 `webp-data.ts` 约 92KB。
-
-### Q: 能否使用 2x 尺寸的 WebP？
-A: 可以，但目前端点只返回 default 尺寸。修改 `index.ts` 的 `webpKey` 构建逻辑即可支持。
+A: 不会。16 个 WebP 文件总共仅 ~20KB，编码后的 `webp-data.ts` 约 27KB。
 
 ### Q: WebP 相对 SVG 有什么优势？
 A: 
@@ -110,7 +107,7 @@ A:
 ### Q: 如何添加新网站？
 A: 
 1. 在 `src/sites.ts` 的 `SITES` 对象中添加网站
-2. 运行 `pnpm generate-webp`
+2. 运行 `pnpm run generate-webp`
 3. 完成！新网站的 WebP 端点自动可用
 
 ## 故障排查
@@ -129,10 +126,10 @@ pnpm add tsx --save-dev
 这是正常的，所有 WebP Base64 数据都存储在该文件中。
 
 ### 端点返回 404
-确保已运行 `pnpm generate-webp` 来生成必要的文件。
+确保已运行 `pnpm run generate-webp` 来生成必要的文件。
 
 ## 性能提示
 
 - WebP 端点使用相同的缓存策略（5 分钟 CDN 缓存）
 - Base64 编码增加了约 33% 的大小，但节省了网络请求
-- 总体大小仍小于 SVG，特别是在高清屏幕上
+- 总体文件小且高效
