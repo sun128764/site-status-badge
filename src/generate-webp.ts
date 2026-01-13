@@ -12,8 +12,8 @@ import sharp from "sharp";
 const OUTPUT_DIR = resolve(join(__dirname, "../public"));
 const MANIFEST_FILE = resolve(join(__dirname, "../public/webp-manifest.json"));
 const FORMATS = [
-    { width: 212, suffix: "default" },
-    { width: 424, suffix: "2x" },
+    { width: 84, suffix: "default" },
+    { width: 168, suffix: "2x" },
 ];
 
 interface WebPManifest {
@@ -56,7 +56,7 @@ async function generateWebPFiles(): Promise<void> {
                     // 仅指定 width，height 由 sharp 按原始 SVG 宽高比自动计算，避免图像被压扁
                     await sharp(Buffer.from(svg))
                         .resize({ width })
-                        .webp({ quality: 90 })
+                        .webp({ quality: 100 })
                         .toFile(webpFilePath);
 
                     // 读取文件内容用于 KV 存储
