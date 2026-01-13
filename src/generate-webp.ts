@@ -11,10 +11,7 @@ import sharp from "sharp";
 
 const OUTPUT_DIR = resolve(join(__dirname, "../public"));
 const MANIFEST_FILE = resolve(join(__dirname, "../public/webp-manifest.json"));
-const FORMATS = [
-    { width: 84, suffix: "default" },
-    { width: 168, suffix: "2x" },
-];
+
 
 interface WebPManifest {
     generated: string;
@@ -47,25 +44,21 @@ async function generateWebPFiles(): Promise<void> {
                 const statusName = status ? "online" : "offline";
                 const statusNum = status ? "1" : "0";
 
-                // 为每种尺寸生成 WebP
-                for (const { width, suffix } of FORMATS) {
-                    const webpFileName = `${siteKey}-${statusNum}-${suffix}.webp`;
-                    const webpFilePath = join(OUTPUT_DIR, webpFileName);
+                // 只生成默认尺寸 WebP
+                const webpFileName = `${siteKey}-${statusNum}.webp`;
+                const webpFilePath = join(OUTPUT_DIR, webpFileName);
 
-                    // 使用 sharp 将 SVG 等比缩放为指定宽度的 WebP
-                    // 仅指定 width，height 由 sharp 按原始 SVG 宽高比自动计算，避免图像被压扁
-                    await sharp(Buffer.from(svg))
-                        .resize({ width })
-                        .webp({ quality: 100 })
-                        .toFile(webpFilePath);
+                // 生成 WebP（不缩放，直接输出）
+                await sharp(Buffer.from(svg))
+                    .webp({ quality: 100 })
+                    .toFile(webpFilePath);
 
-                    // 读取文件内容用于 KV 存储
-                    const fileContent = readFileSync(webpFilePath);
-                    const kvKey = `webp:${siteKey}-${statusNum}-${suffix}`;
-                    manifest.files[kvKey] = webpFileName;
+                // 读取文件内容用于 KV 存储
+                const fileContent = readFileSync(webpFilePath);
+                const kvKey = `webp:${siteKey}-${statusNum}`;
+                manifest.files[kvKey] = webpFileName;
 
-                    console.log(`✓ 生成 ${webpFileName} (${statusName}, ${suffix})`);
-                }
+                console.log(`✓ 生成 ${webpFileName} (${statusName})`);
             }
 
             results[siteKey] = { status: "success" };

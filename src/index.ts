@@ -141,7 +141,7 @@ export default {
 
 			// 从预生成的 WebP 数据获取
 			const statusNum = isOnline ? "1" : "0";
-			const webpKey = `webp:${siteKey}-${statusNum}-default`;
+			const webpKey = `webp:${siteKey}-${statusNum}`;
 			const webpBuffer = getWebPData(webpKey);
 
 			if (!webpBuffer) {
