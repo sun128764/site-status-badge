@@ -4,6 +4,8 @@ import { getWebPData } from "./webp-data";
 
 export interface Env {
 	SITE_STATUS_KV: KVNamespace;
+	PER_SITE_RATE_LIMIT: RateLimit;
+	PER_IP_RATE_LIMIT: RateLimit;
 }
 
 const CACHE_TTL = 30 * 60; // 30 分钟结果缓存
@@ -45,6 +47,8 @@ async function getStatusWithCache(
 	siteKey: string,
 	siteUrl: string,
 	kv: KVNamespace,
+	env: Env,
+	clientIp: string,
 	ctx?: ExecutionContext
 ): Promise<boolean> {
 	const cacheKey = `status:${siteKey}`;
@@ -53,11 +57,6 @@ async function getStatusWithCache(
 	// 检查缓存
 	const cachedStatus = await kv.get(cacheKey);
 	if (cachedStatus !== null) {
-		// 缓存存在，立即返回缓存值，不阻塞用户请求
-		// 同时在后台异步刷新缓存（通过 ctx.waitUntil）
-		if (ctx) {
-			ctx.waitUntil(refreshStatusInBackground(siteKey, siteUrl, kv));
-		}
 		return cachedStatus === "true";
 	}
 
@@ -69,12 +68,22 @@ async function getStatusWithCache(
 		return lastStatus === "true";
 	}
 
+	// 检查单个 IP + siteKey 的速率限制
+	const ipLimitResult = await env.PER_IP_RATE_LIMIT.limit({
+		key: `${clientIp}:${siteKey}`,
+	});
+	if (!ipLimitResult.success) {
+		// 超过 IP 限制，返回上次保存的状态或默认 true
+		const lastStatus = await kv.get(`last:${siteKey}`);
+		return lastStatus === "true";
+	}
+
 	// 没有缓存，设置锁并在后台刷新
 	if (ctx) {
-		ctx.waitUntil(refreshStatusInBackground(siteKey, siteUrl, kv));
+		ctx.waitUntil(refreshStatusInBackground(siteKey, siteUrl, kv, env));
 	} else {
 		// 如果没有 ctx，同步执行（作为回退）
-		await refreshStatusInBackground(siteKey, siteUrl, kv);
+		await refreshStatusInBackground(siteKey, siteUrl, kv, env);
 	}
 
 	// 返回上次保存的状态或默认 true（更乐观的假设）
@@ -88,12 +97,28 @@ async function getStatusWithCache(
 async function refreshStatusInBackground(
 	siteKey: string,
 	siteUrl: string,
-	kv: KVNamespace
+	kv: KVNamespace,
+	env: Env
 ): Promise<void> {
 	const lockKey = `lock:${siteKey}`;
 	const cacheKey = `status:${siteKey}`;
 
 	try {
+		// 检查每个站点的速率限制
+		const perSiteLimitResult = await env.PER_SITE_RATE_LIMIT.limit({
+			key: `site:${siteKey}`,
+		});
+		if (!perSiteLimitResult.success) {
+			// 超过每个站点的限制，直接返回
+			return;
+		}
+
+		// 再次检查锁，防止重复刷新
+		const existingLock = await kv.get(lockKey);
+		if (existingLock !== null) {
+			return;
+		}
+
 		// 设置锁，防止多个并发请求
 		await kv.put(lockKey, "1", { expirationTtl: LOCK_TTL });
 
@@ -119,6 +144,11 @@ export default {
 		const url = new URL(request.url);
 		const path = url.pathname;
 
+		// 获取客户端 IP
+		const clientIp = request.headers.get("cf-connecting-ip") ||
+			request.headers.get("x-forwarded-for") ||
+			"unknown";
+
 		// 处理 WebP 端点：/badge/{siteKey}.webp
 		const webpMatch = path.match(/^\/badge\/([a-zA-Z0-9_-]+)\.webp\/?$/);
 		if (webpMatch) {
@@ -137,7 +167,7 @@ export default {
 			}
 
 			// 获取状态（带缓存）
-			const isOnline = await getStatusWithCache(siteKey, siteUrl, env.SITE_STATUS_KV, ctx);
+			const isOnline = await getStatusWithCache(siteKey, siteUrl, env.SITE_STATUS_KV, env, clientIp, ctx);
 
 			// 从预生成的 WebP 数据获取
 			const statusNum = isOnline ? "1" : "0";
@@ -187,7 +217,7 @@ export default {
 		}
 
 		// 获取状态（带缓存）
-		const isOnline = await getStatusWithCache(siteKey, siteUrl, env.SITE_STATUS_KV, ctx);
+		const isOnline = await getStatusWithCache(siteKey, siteUrl, env.SITE_STATUS_KV, env, clientIp, ctx);
 
 		// 生成 SVG badge
 		const svg = generateBadge(siteKey, isOnline);
