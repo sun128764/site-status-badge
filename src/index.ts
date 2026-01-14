@@ -193,7 +193,7 @@ export default {
 		}
 
 		// 处理 SVG 端点：/badge/{siteKey}
-		const match = path.match(/^\/badge\/([a-zA-Z0-9_-]+)\/?$/);
+		const match = path.match(/^\/badge\/([a-zA-Z0-9_-]+)(\.svg)?\/?$/);
 
 		if (!match) {
 			return new Response("Not Found.  Usage: /badge/{site-key} or /badge/{site-key}.webp", {
